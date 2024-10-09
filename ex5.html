@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="stylesheet" href="style.css">
+    <title>Produtos</title>
+  </head>
+  <body>
+    <h2>Preateleira de Produtos</h2>
+
+    <div
+      class="container_produtos"
+      ondragover="allowDrop(event)"
+      ondrop="dropRemove(event)"
+    >
+      <!-- 
+		ondragover="allowDrop(event)": Permite que um item seja arrastado sobre essa área.
+ondrop="dropRemove(event)": chamada quando você arrasta um item do carrinho de volta para a área de produtos.
+-->
+      <div
+        class="produto"
+        id="produto1"
+        draggable="true"
+        ondragstart="drag(event)"
+        data-preco="20"
+      >
+        <!-- draggable="true": Faz com que os produtos possam ser arrastados.
+			data-preco="valor": Armazena o preço do produto-->
+        Produto 1 - 20,00
+      </div>
+
+      <div
+        class="produto"
+        id="produto2"
+        draggable="true"
+        ondragstart="drag(event)"
+        data-preco="30"
+      >
+        Produto 2 - 30,00
+      </div>
+
+      <div
+        class="produto"
+        id="produto3"
+        draggable="true"
+        ondragstart="drag(event)"
+        data-preco="55"
+      >
+        Produto 3 - 55,00
+      </div>
+    </div>
+
+    <h2>Carrinho de Compras</h2>
+    <div id="carrinho" ondragover="allowDrop(event)" ondrop="drop(event)">
+      <p>Arraste o produto escolhido aqui</p>
+    </div>
+
+    <h3>Total a ser pago: R$ <span id="total">0,00</span></h3>
+
+    <script>
+      var carrinho = {}; // um objeto vazio, mas conforme os produtos forem adicionados, ele será preenchido com os dados dos produtos.
+      var total = 0;
+
+      function allowDrop(event) {
+        event.preventDefault(); // Sem essa linha, o navegador pode impedir que você solte o elemento no destino
+      }
+
+      function drag(event) {
+        event.dataTransfer.setData("produtoID", event.target.id);
+      }
+      // 		drag(event): Inicia o processo de arrastar.
+      // dataTransfer.setData("produtoID", event.target.id): Armazena o ID do item arrastado (produto) para ser recuperado posteriormente
+
+      // para adicionar um produto no carrinho
+
+      function drop(event) {
+        // drop(event) é executada quando o usuário solta o item que está arrastando
+        event.preventDefault(); //  cancela o comportamento padrão do navegador, que poderia impedir a soltura (drop) do item
+
+        var produtoID = event.dataTransfer.getData("produtoID"); // recuperando o ID do produto que foi salvo anteriormente na função drag(event)
+        var produto = document.getElementById(produtoID);
+        var preco = parseFloat(produto.getAttribute("data-preco"));
+        // produto.getAttribute("data-preco") recupera o valor desse atributo, que é uma string.
+        //parseFloat() converte essa string em um número de ponto flutuante
+
+        //verifica se o produto já está no carrinho de compras e, com base nisso, decide se deve atualizar a quantidade ou adicionar o produto ao carrinho
+        if (carrinho[produtoID]) {
+          // você verifica se o produto com o ID produtoID já existe dentro do objeto carrinho.
+          carrinho[produtoID].quantidade += 1;
+          // Se o produto já estiver no carrinho, essa linha simplesmente aumenta a quantidade desse produto em 1.
+          // A propriedade quantidade é usada para rastrear quantas vezes o produto foi adicionado ao carrinho.
+        } else {
+          // se não existir o produto no carrinho, Cria um novo item no objeto carrinho.
+          carrinho[produtoID] = {
+            nome: produto.innerText, // O nome do produto (obtido a partir do texto dentro do elemento HTML do produto, produto.innerText).
+            preco: preco, // armazenado no atributo data-preco e convertido em número.
+            quantidade: 1, // quantidade: Inicialmente, a quantidade é definida como 1, já que o produto está sendo adicionado pela primeira vez.
+          };
+        }
+
+        total += preco; // Esta linha soma o preço do produto que foi arrastado ao valor total da compra.
+        document.getElementById("total").innerText = total.toFixed(2);
+        //.innerText: Define o texto interno desse elemento, que será o novo valor total.
+        //total.toFixed(2): Converte o valor total para uma string com duas casas decimais, garantindo que o valor seja exibido no formato correto de moeda (por exemplo, 40.00 em vez de 40).
+
+        // irá atualizar a exibição do carrinho
+        atualizarCarrinho();
+      }
+
+      // Função para remover o produto do carrinho
+
+      function dropRemove(event) {
+        event.preventDefault();
+        var produtoID = event.dataTransfer.getData("produtoID");
+
+        // verifica se existe o produto no carrinho
+
+        if (carrinho[produtoID]) {
+          var preco = carrinho[produtoID].preco; // Verifica se o produto existe no carrinho usando carrinho[produtoID].
+          //Se o produto estiver no carrinho, captura o preço do produto a partir do objeto armazenado na variável carrinho.
+
+          // função que irá subtrair a unidade do produto do carrinho
+          carrinho[produtoID].quantidade -= 1;
+          total -= preco;
+          document.getElementById("total").innerText = total.toFixed(2);
+
+          // remove o produto do carrinho e a quantidade for 0
+          if (carrinho[produtoID].quantidade === 0) {
+            // se a quantidade do produto no carrinho for igual a 0, o produto é completamente removido
+            delete carrinho[produtoID];
+          }
+
+          // função que irá atualizar a exibição do carrinho
+          atualizarCarrinho();
+        }
+      }
+
+      function atualizarCarrinho() {
+        var carrinhoDiv = document.getElementById("carrinho");
+        carrinhoDiv.innerHTML = ""; // A função começa limpando o conteúdo do carrinho, removendo todos os produtos exibidos visualmente, para que seja possível reescrevê-los.
+
+        for (var produtoID in carrinho) {
+          //in serve para verificar a existência de uma propriedade ou iterar sobre as chaves de um objeto.
+          var item = carrinho[produtoID];
+          //  percorre todos os itens dentro do objeto carrinho e pega cada produtoId.  cada item,  cria uma variável item que contém os detalhes do produto (nome, preço, quantidade).
+          var carrinhoItem = document.createElement("div");
+          carrinhoItem.className = "carrinho-item";
+          //Para cada produto dentro do carrinho, ele cria um elemento div e define a classe como "carrinho-item". Essa div será usado para exibir o produto na interface do carrinho.
+          carrinhoItem.draggable = true;
+          carrinhoItem.ondragstart = drag; // permite arrastar os itens do carrinho
+          carrinhoItem.id = produtoID;
+          //O ID do item é definido como o produtoId, para que possa ser identificado quando for arrastado e retirado do carrinho.
+
+          carrinhoItem.innerHTML = `${item.nome} <span> ${
+            item.quantidade
+          }x - R$ ${(item.preco * item.quantidade).toFixed(2)} </span>`;
+          //o nome do produto, a quantidade e o preço total (quantidade × preço) são exibidos
+          carrinhoDiv.appendChild(carrinhoItem);
+          //o item carrinho é adicionado ao carrinhoDiv
+        }
+
+        if (Object.keys(carrinho).length === 0) {
+          // verifica se o carrinho está vazio
+          carrinhoDiv.innerHTML = "<p> Arraste os produtos aqui </p>";
+        }
+        //Object.keys(carrinho).length conta quantos produto estão no carrinho.
+        //Se esse número for 0, significa que o carrinho está vazio, e a mensagem será exibida.
+      }
+    </script>
+  </body>
+</html>
